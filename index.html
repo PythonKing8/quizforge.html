@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QuizForge — IGCSE Question Generator</title>
+<style>
+:root{
+  --bg:#050914; --panel:#0a1428; --panel2:#0d1a33; --line:#1d3154;
+  --text:#edf4ff; --muted:#91a4c4; --blue:#36a4ff; --cyan:#42e8d0;
+  --purple:#8d5cff; --good:#39d98a; --bad:#ff607d;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:
+    radial-gradient(circle at 15% 15%,rgba(43,105,255,.18),transparent 30%),
+    radial-gradient(circle at 88% 75%,rgba(145,63,255,.16),transparent 32%),
+    linear-gradient(135deg,#030711,#071226 52%,#090713);
+  min-height:100vh;
+}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.app{display:grid;grid-template-columns:245px 1fr;min-height:100vh}
+.sidebar{
+  border-right:1px solid rgba(110,145,205,.16);background:rgba(3,9,20,.78);
+  backdrop-filter:blur(18px);padding:22px 14px;position:sticky;top:0;height:100vh;
+}
+.brand{display:flex;align-items:center;gap:11px;padding:5px 10px 24px;font-weight:800;font-size:21px}
+.logo{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,var(--blue),var(--purple));display:grid;place-items:center;box-shadow:0 0 28px rgba(75,120,255,.45)}
+.logo span{font-weight:900}
+.small{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;padding:10px}
+.subject{
+  width:100%;border:1px solid transparent;background:transparent;color:#d9e6ff;
+  padding:11px 10px;border-radius:11px;text-align:left;display:flex;align-items:center;gap:10px;margin:3px 0;
+}
+.subject:hover{background:rgba(50,120,255,.08);border-color:rgba(70,150,255,.14)}
+.subject.active{background:linear-gradient(90deg,rgba(48,157,255,.19),rgba(130,84,255,.1));border-color:rgba(74,161,255,.32)}
+.dot{width:11px;height:11px;border-radius:50%;box-shadow:0 0 12px currentColor;flex:none}
+.main{padding:24px 28px 50px;max-width:1450px;width:100%;margin:auto}
+.topbar{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.search{flex:1;max-width:620px;background:rgba(8,19,39,.8);border:1px solid var(--line);border-radius:13px;padding:12px 15px;color:white;outline:none}
+.search:focus{border-color:#368eff;box-shadow:0 0 0 3px rgba(54,142,255,.1)}
+.top-actions{margin-left:auto;display:flex;gap:9px}
+.btn{border:1px solid #28456f;background:#0c1a34;color:#e8f1ff;border-radius:10px;padding:10px 14px;font-weight:700}
+.btn:hover{filter:brightness(1.15)}
+.btn.primary{border-color:#398df1;background:linear-gradient(135deg,#187edc,#7050df);box-shadow:0 8px 28px rgba(55,113,238,.22)}
+.btn.ghost{background:transparent}
+.hero{
+  border:1px solid #20385e;border-radius:19px;padding:28px;
+  background:linear-gradient(125deg,rgba(15,35,69,.88),rgba(12,17,44,.82));
+  position:relative;overflow:hidden;
+}
+.hero:after{content:"";position:absolute;width:300px;height:300px;border-radius:50%;right:-120px;top:-150px;background:radial-gradient(circle,rgba(75,187,255,.22),transparent 65%)}
+.eyebrow{color:#6dbbff;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+h1{font-size:38px;line-height:1.05;margin:9px 0 10px}
+.hero p{color:var(--muted);max-width:760px}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.control{background:#07142a;border:1px solid #223d65;color:white;border-radius:10px;padding:10px 12px}
+select.control{min-width:165px}
+.grid{display:grid;grid-template-columns:1.5fr .75fr;gap:18px;margin-top:18px}
+.card{background:rgba(7,18,37,.84);border:1px solid var(--line);border-radius:17px;padding:18px}
+.card h2{margin:0 0 14px;font-size:16px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{padding:15px;border:1px solid #1a3153;border-radius:13px;background:#08162c}
+.stat b{display:block;font-size:24px;margin-top:5px}.stat span{font-size:11px;color:var(--muted)}
+.topic-list{display:grid;gap:7px}.topic{padding:10px;border:1px solid #193050;border-radius:10px;color:#b7c7e2;display:flex;justify-content:space-between}
+.topic:hover{border-color:#347cd2;background:#091a34}
+.quiz-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:15px}
+.progress{height:7px;background:#142642;border-radius:99px;overflow:hidden;margin:10px 0 22px}.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:99px;width:0}
+.question-num{font-size:12px;color:#78baff;text-transform:uppercase;letter-spacing:.1em;font-weight:800}
+.question{font-size:21px;line-height:1.45;margin:12px 0 19px}
+.options{display:grid;gap:10px}.option{
+  text-align:left;width:100%;background:#09182f;border:1px solid #213a60;color:#dfeaff;padding:14px;border-radius:12px;
+  transition:.15s;display:flex;gap:12px;align-items:flex-start
+}
+.option:hover:not(.locked){border-color:#3b8df0;transform:translateY(-1px)}
+.letter{width:28px;height:28px;border-radius:8px;background:#122745;display:grid;place-items:center;color:#8eb4e8;font-weight:800;flex:none}
+.option.correct{border-color:rgba(57,217,138,.7);background:rgba(57,217,138,.09)}.option.wrong{border-color:rgba(255,96,125,.7);background:rgba(255,96,125,.08)}
+.option.correct .letter{background:rgba(57,217,138,.25);color:#6ff0aa}.option.wrong .letter{background:rgba(255,96,125,.22);color:#ff9caf}
+.feedback{margin-top:15px;padding:14px;border-radius:12px;background:#0a1930;border:1px solid #203a60;color:#c5d4eb;display:none}
+.feedback.show{display:block}.feedback strong{color:#fff}.explain{margin-top:6px;color:#9fb1cd}
+.quiz-actions{display:flex;justify-content:space-between;margin-top:18px}
+.hide{display:none!important}
+.dashboard-note{color:var(--muted);font-size:13px;line-height:1.5}
+.badge{display:inline-flex;align-items:center;gap:6px;border:1px solid #26446e;border-radius:99px;padding:6px 9px;color:#9fc5f7;font-size:11px}
+.footer{color:#667a9b;font-size:11px;text-align:center;margin-top:25px}
+@media(max-width:900px){.app{grid-template-columns:1fr}.sidebar{position:static;height:auto;border-right:0;border-bottom:1px solid #172b49}.subject{display:inline-flex;width:auto;margin-right:4px}.sidebar-inner{display:flex;overflow:auto}.grid{grid-template-columns:1fr}.main{padding:18px}.topbar{flex-wrap:wrap}.search{max-width:none;order:3;flex-basis:100%}}
+</style>
+
+<style id="quizforge-real-v2-css">
+#topicList{display:flex;flex-wrap:wrap;gap:7px}
+.topic-chip{padding:9px 12px;border:1px solid #193050;border-radius:10px;color:#b7c7e2;background:#07142a;cursor:pointer}
+.topic-chip:hover{border-color:#347cd2;background:#091a34}
+.topic-chip.selected{border-color:#398df1;background:rgba(54,164,255,.14);color:#fff}
+.topic-tools{width:100%;margin-bottom:5px}
+.topic-tools .btn{padding:7px 10px;margin-right:6px}
+.topic-summary{width:100%;font-size:12px;color:var(--muted);margin-top:4px}
+.subject-progress-row{display:grid;grid-template-columns:190px 1fr 80px;gap:12px;align-items:center;margin:10px 0;color:#cbd8ee}
+.subject-progress-bar{height:8px;background:#142642;border-radius:99px;overflow:hidden}
+.subject-progress-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:99px}
+@media(max-width:700px){.subject-progress-row{grid-template-columns:1fr}.subject-progress-row .subject-progress-bar{width:100%}}
+</style>
+
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand"><div class="logo"><span>Q</span></div>QuizForge</div>
+  <div class="small">Subjects</div>
+  <div id="subjects"></div>
+  <div class="small" style="margin-top:18px">Tools</div>
+  <button id="dashboardBtn" class="subject" onclick="showHome()">⌂ Dashboard</button>
+  <button id="newQuizBtn" class="subject" onclick="newQuiz()">↻ New Quiz</button>
+  <button id="progressBtn" class="subject" onclick="showProgressPage()">📊 Question Progress</button>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <input id="search" class="search" placeholder="Search a subject or topic…" oninput="filterSubjects()">
+    <div class="top-actions"><button class="btn ghost" onclick="resetProgress()">Reset progress</button></div>
+  </div>
+
+  <section id="home">
+    <div class="hero">
+      <div class="eyebrow">IGCSE practice engine</div>
+      <h1>Forge a quiz.<br>Master the topic.</h1>
+      <p>Choose a subject and topic then generate a fresh set of original exam-style MCQs. Build a fresh quiz from any subject and one or more topics.</p>
+      <div class="controls">
+        <select id="countSelect" class="control"><option>5</option><option>10</option><option>15</option><option>20</option></select>
+        <button class="btn primary" onclick="startQuiz()">Generate questions →</button>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h2>Topics</h2><div id="topicList" class="topic-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="quiz" class="hide">
+    <div class="card">
+      <div class="quiz-head"><div><span id="quizSubject" class="badge"></span> <span id="quizTopic" class="badge"></span></div><span id="scoreText" class="badge"></span></div>
+      <div class="progress"><i id="progress"></i></div>
+      <div id="questionNum" class="question-num"></div>
+      <div id="question" class="question"></div>
+      <div id="options" class="options"></div>
+      <div id="feedback" class="feedback"></div>
+      <div class="quiz-actions"><button class="btn" onclick="showHome()">← Change topic</button><button id="nextBtn" class="btn primary hide" onclick="nextQuestion()">Next question →</button></div>
+    </div>
+  </section>
+
+  <section id="progressPage" class="hide">
+    <div class="card">
+      <div class="quiz-head">
+        <h2 style="margin:0">📊 Question Progress</h2>
+        <button class="btn" onclick="showHome()">← Back to dashboard</button>
+      </div>
+      <div class="stats">
+        <div class="stat"><span>QUESTIONS SOLVED</span><b id="totalSolved">0</b></div>
+        <div class="stat"><span>CORRECT</span><b id="totalCorrect">0</b></div>
+        <div class="stat"><span>ACCURACY</span><b id="totalAccuracy">0%</b></div>
+      </div>
+      <div style="margin-top:18px">
+        <h2>By subject</h2>
+        <div id="subjectProgress"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">QuizForge • IGCSE-style original practice • Progress is stored only in this browser</div>
+</main>
+</div>
+
+<script>
+const SUBJECTS = {
+"Mathematics 0580": ["Number","Algebra and graphs","Geometry","Mensuration","Probability","Statistics"],
+"Physics 0625": ["Motion","Forces and momentum","Energy","Thermal physics","Waves","Electricity","Magnetism"],
+"Chemistry 0620": ["Particles and states","Atomic structure","Bonding","Stoichiometry","Acids bases and salts","Periodic table","Rates and energy","Organic chemistry"],
+"Biology 0610": ["Cells","Movement in and out of cells","Biological molecules","Enzymes","Plant nutrition","Human nutrition","Transport","Respiration","Coordination","Ecology"],
+"Economics 0455": ["Basic economic problem","Factors of production","Demand and supply","Elasticity","Market failure","Government policy","Macroeconomics","International trade"],
+"Computer Science 0478": ["Data representation","Communication and internet","Hardware","Software","Security","Automated systems","Algorithm design","Programming"],
+"English Language 0500": ["Comprehension","Writer's effect","Summary","Fact and opinion","Language and tone","Extended writing"],
+"Spanish 0530": ["Present tense","Past tenses","Future","Opinions","School and daily life","Holidays","Food and health","Grammar"],
+"Business Studies 0450": ["Business activity","People in business","Marketing","Operations","Finance","External influences","Business objectives"]
+};
+
+const COLORS=["#36a4ff","#42e8d0","#8d5cff","#ff6b8a","#ffc857","#70e1ff","#a78bfa","#67e8f9","#fb7185"];
+const state={subject:Object.keys(SUBJECTS)[0],topics:new Set(),topic:"All topics",quiz:[],index:0,score:0,answered:false};
+const $=id=>document.getElementById(id);
+function subjectShort(s){return s.split(" ")[0]}
+
+function renderSubjects(filter=""){
+  const box=$("subjects");
+  box.innerHTML=Object.keys(SUBJECTS)
+    .filter(s=>(s+" "+SUBJECTS[s].join(" ")).toLowerCase().includes(filter.toLowerCase()))
+    .map((s,i)=>`<button type="button" class="subject ${s===state.subject?"active":""}" data-subject="${s.replace(/&/g,"&amp;").replace(/"/g,"&quot;")}">
+      <span class="dot" style="color:${COLORS[i]}"></span><span>${s}</span></button>`).join("");
+  box.querySelectorAll("button[data-subject]").forEach(btn=>{
+    btn.addEventListener("click",()=>selectSubject(btn.dataset.subject));
+  });
+}
+
+function selectSubject(s){
+  if(!SUBJECTS[s])return;
+  state.subject=s;
+  state.topics.clear();
+  state.topic="All topics";
+  showHome();
+  renderSubjects($("search").value);
+  renderTopics();
+}
+
+function renderTopics(){
+  const box=$("topicList");
+  if(!box)return;
+  const ts=SUBJECTS[state.subject]||[];
+  box.innerHTML="";
+  const tools=document.createElement("div");
+  tools.className="topic-tools";
+  tools.style.width="100%";
+  tools.innerHTML=`<button class="btn ghost" onclick="selectAllTopics()">Select all</button>
+                   <button class="btn ghost" onclick="clearTopics()">Clear</button>`;
+  box.appendChild(tools);
+  ts.forEach(t=>{
+    const b=document.createElement("button");
+    b.type="button";
+    b.className="topic-chip"+(state.topics.has(t)?" selected":"");
+    b.textContent=t;
+    b.onclick=()=>{
+      if(state.topics.has(t))state.topics.delete(t);else state.topics.add(t);
+      renderTopics();
+    };
+    box.appendChild(b);
+  });
+  const summary=document.createElement("div");
+  summary.className="topic-summary";
+  summary.textContent=state.topics.size?`${state.topics.size} topic${state.topics.size===1?"":"s"} selected`:"No topics selected — all topics will be used";
+  box.appendChild(summary);
+}
+
+function selectAllTopics(){
+  state.topics=new Set(SUBJECTS[state.subject]||[]);
+  renderTopics();
+}
+function clearTopics(){
+  state.topics.clear();
+  renderTopics();
+}
+function filterSubjects(){renderSubjects($("search").value)}
+
+function showHome(){
+  $("home").classList.remove("hide");
+  $("quiz").classList.add("hide");
+  $("progressPage").classList.add("hide");
+  document.querySelectorAll("#subjects .subject").forEach(b=>b.classList.remove("active"));
+  const active=[...document.querySelectorAll("#subjects .subject")].find(b=>b.dataset.subject===state.subject);
+  if(active)active.classList.add("active");
+}
+function newQuiz(){startQuiz()}
+function showProgressPage(){
+  $("home").classList.add("hide");
+  $("quiz").classList.add("hide");
+  $("progressPage").removeAttribute("class");
+  $("progressPage").style.display="block";
+  renderProgressPage();
+}
+function progressKey(){return "qf_"+state.subject}
+function saved(){
+  try{return JSON.parse(localStorage.getItem(progressKey())||'{"seen":0,"correct":0}')}catch(e){return {seen:0,correct:0}}
+}
+function saveProgress(ok){
+  let p=saved();p.seen++;if(ok)p.correct++;
+  localStorage.setItem(progressKey(),JSON.stringify(p));
+}
+function renderProgressPage(){
+  let total=0,correct=0;
+  const rows=Object.keys(SUBJECTS).map(s=>{
+    const p=(()=>{try{return JSON.parse(localStorage.getItem("qf_"+s)||'{"seen":0,"correct":0}')}catch(e){return {seen:0,correct:0}}})();
+    total+=p.seen;correct+=p.correct;
+    return `<div class="subject-progress-row"><span>${s}</span><div class="subject-progress-bar"><i style="width:${Math.min(100,p.seen/200*100)}%"></i></div><span>${p.seen} solved</span></div>`;
+  }).join("");
+  $("totalSolved").textContent=total;
+  $("totalCorrect").textContent=correct;
+  $("totalAccuracy").textContent=total?Math.round(correct/total*100)+"%":"0%";
+  $("subjectProgress").innerHTML=rows;
+}
+function resetProgress(){
+  if(confirm("Reset all QuizForge progress?")){
+    Object.keys(localStorage).filter(k=>k.startsWith("qf_")).forEach(k=>localStorage.removeItem(k));
+    renderProgressPage();
+  }
+}
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function fmt(n){return Number.isInteger(n)?String(n):Number(n.toFixed(2)).toString()}
+function q(text, options, answer, explanation, topic){return {text,options,answer,explanation,topic}}
+function choices(correct, distractors){return shuffle([correct,...distractors])}
+
+/* -------------------- ORIGINAL QUESTION GENERATORS -------------------- */
+function mathQuestions(){
+  const out=[];
+  const add=(t,o,a,e,topic)=>out.push(q(t,o,o.indexOf(a),e,topic));
+  for(let i=0;i<200;i++){
+    const k=i%10;
+
+    if(k===0){
+      let h=2+(i%7),m=2+(i%5),n=3+(i%6);
+      let a=h*m,b=h*n;
+      // Avoid cases where a distractor accidentally equals the answer.
+      if(m===h)m++;
+      if(n===h)n++;
+      add(`What is the highest common factor of ${a} and ${b}?`,
+        choices(String(h),[String(m),String(n),String(h*m*n)]),
+        String(h),"Find the largest number that divides both numbers.","Number");
+
+    }else if(k===1){
+      let a=3+(i%9),b=2+(i%6);
+      let ans=a+b;
+      add(`Simplify ${a}x + ${b}x.`,
+        choices(ans+"x",[(ans+1)+"x",(a*b)+"x",Math.abs(a-b)+"x"]),
+        ans+"x",
+        `Add the coefficients: ${a} + ${b} = ${ans}.`,
+        "Algebra and graphs");
+
+    }else if(k===2){
+      let x=2+(i%9),ans=2*x+5;
+      add(`If y = 2x + 5, what is y when x = ${x}?`,
+        choices(String(ans),[String(ans+1),String(ans-1),String(x+5)]),
+        String(ans),"Substitute the value of x into the equation.","Algebra and graphs");
+
+    }else if(k===3){
+      let a=5+(i%8),b=4+(i%7),ans=a*b;
+      add(`A rectangle has length ${a} cm and width ${b} cm. What is its area?`,
+        choices(ans+" cm²",[(2*(a+b))+" cm²",(a+b)+" cm²",(a*b*2)+" cm²"]),
+        ans+" cm²","Area = length × width.","Mensuration");
+
+    }else if(k===4){
+      let r=2+(i%7),ans=2*3.14*r;
+      add(`What is the circumference of a circle with radius ${r} cm? Use π = 3.14.`,
+        choices(fmt(ans)+" cm",[fmt(3.14*r*r)+" cm",fmt(3.14*r)+" cm",fmt(4*3.14*r)+" cm"]),
+        fmt(ans)+" cm","Circumference = 2πr.","Mensuration");
+
+    }else if(k===5){
+      let total=20+(i%20),favourable=3+(i%7);
+      let ans=favourable/total;
+      add(`A bag contains ${total} counters and ${favourable} are red. What is the probability of choosing a red counter?`,
+        choices(fmt(ans),[fmt(1-ans),fmt(favourable/(total+2)),fmt(ans+0.1)]),
+        fmt(ans),"Probability = favourable outcomes ÷ total outcomes.","Probability");
+
+    }else if(k===6){
+      let vals=[4+(i%5),7+(i%6),9+(i%7),12+(i%5)];
+      let ans=vals.reduce((a,b)=>a+b,0)/vals.length;
+      add(`What is the mean of ${vals.join(", ")}?`,
+        choices(fmt(ans),[fmt(ans+1),fmt(ans-1),fmt(vals[0]+vals[3]/2)]),
+        fmt(ans),"Add all the values then divide by the number of values.","Statistics");
+
+    }else if(k===7){
+      let x=2+(i%8),n=2+(i%7),rhs=3*x+n;
+      add(`Solve 3x + ${n} = ${rhs}.`,
+        choices("x = "+x,["x = "+(x+1),"x = "+Math.max(0,x-1),"x = "+(x+2)]),
+        "x = "+x,"Subtract the constant then divide by 3.","Algebra and graphs");
+
+    }else if(k===8){
+      let p=40+(i%40),percent=10+(i%20);
+      let ans=p*(1+percent/100);
+      add(`A price of $${p} increases by ${percent}%. What is the new price?`,
+        choices("$"+fmt(ans),["$"+fmt(p+percent),"$"+fmt(p-percent),"$"+fmt(p*(1-percent/100))]),
+        "$"+fmt(ans),"Multiply the original price by 1 + percentage/100.","Number");
+
+    }else{
+      let angle=35+(i%50),ans=180-angle;
+      add(`Two angles lie on a straight line. One is ${angle}°. What is the other?`,
+        choices(ans+"°",[(180+angle)+"°",(90-angle)+"°",angle+"°"]),
+        ans+"°","Angles on a straight line sum to 180°.","Geometry");
+    }
+  }
+  return out;
+}
+
+function physicsQuestions(){
+ const out=[];for(let i=0;i<200;i++){let k=i%10;
+  if(k===0){let u=2+i%6,a=1+i%4,t=3+i%5;let v=u+a*t;out.push(q(`An object has initial velocity ${u} m/s and accelerates at ${a} m/s² for ${t} s. What is its final velocity?`,choices(v+" m/s",[(u+a+t)+" m/s",(u+a*t+1)+" m/s",(a*t)+" m/s"]),0,"Use v = u + at.","Motion"))}
+  else if(k===1){let m=2+i%8,a=3+i%5,F=m*a;out.push(q(`A ${m} kg object accelerates at ${a} m/s². What is the resultant force?`,choices(F+" N",[(m+a)+" N",(m/a)+" N",(F+5)+" N"]),0,"Use F = ma.","Forces and momentum"))}
+  else if(k===2){let m=3+i%7,v=2+i%6,p=m*v;out.push(q(`What is the momentum of a ${m} kg object moving at ${v} m/s?`,choices(p+" kg m/s",[(m+v)+" kg m/s",(p+v)+" kg m/s",v+" kg m/s"]),0,"Momentum = mass × velocity.","Forces and momentum"))}
+  else if(k===3){let m=2+i%8,g=9.8,w=m*g;out.push(q(`What is the weight of a ${m} kg mass? Take g = 9.8 N/kg.`,choices(fmt(w)+" N",[(m+9.8)+" N",fmt(m/9.8)+" N",fmt(w+9.8)+" N"]),0,"Weight = mg.","Forces and momentum"))}
+  else if(k===4){let P=100+i%9*50,t=2+i%5,E=P*t;out.push(q(`A device transfers ${P} J of energy in ${t} s. What is its power?`,choices(fmt(P/t)+" W",[fmt(E)+" W",fmt(P*t*t)+" W",fmt(P+t)+" W"]),0,"Power = energy transferred ÷ time.","Energy"))}
+  else if(k===5){let f=5+i%6,lam=2+i%4,v=f*lam;out.push(q(`A wave has frequency ${f} Hz and wavelength ${lam} m. What is its speed?`,choices(v+" m/s",[(f+lam)+" m/s",fmt(f/lam)+" m/s",fmt(v+f)+" m/s"]),0,"Wave speed = frequency × wavelength.","Waves"))}
+  else if(k===6){let R=2+i%7,I=3+i%5,V=R*I;out.push(q(`A resistor of ${R} Ω carries a current of ${I} A. What is the potential difference?`,choices(V+" V",[(R+I)+" V",fmt(R/I)+" V",fmt(V+R)+" V"]),0,"Use V = IR.","Electricity"))}
+  else if(k===7){let Q=10+i%9,V=2+i%5,C=Q/V;out.push(q(`A charge of ${Q} C moves through a potential difference of ${V} V. How much energy is transferred?`,choices(Q*V+" J",[Q/V+" J",(Q+V)+" J",(Q*V+V)+" J"]),0,"Energy = charge × potential difference.","Electricity"))}
+  else if(k===8){let T=20+i%10;out.push(q(`Which statement best describes a temperature of ${T}°C in terms of particle motion?`,choices("Particles have a range of kinetic energies",["All particles move at exactly the same speed","Particles have zero kinetic energy","Particles are completely stationary"]),0,"Temperature is related to the average kinetic energy of particles.","Thermal physics"))}
+  else {out.push(q("Which change increases the rate of evaporation?",choices("Increasing the surface area",["Decreasing the temperature","Using a smaller surface area","Reducing air movement"]),0,"More exposed surface allows more particles to escape.","Thermal physics"))}
+ }return out;
+}
+function chemistryQuestions(){
+ const out=[];for(let i=0;i<200;i++){let k=i%10;
+  if(k===0){let z=3+i%18;out.push(q(`An atom has proton number ${z}. How many protons does it contain?`,choices(String(z),[String(z+1),String(z-1),String(2*z)]),0,"The proton number equals the number of protons.","Atomic structure"))}
+  else if(k===1){let z=6+i%15;let n=10+i%8;out.push(q(`An atom has ${z} protons and ${n} neutrons. What is its nucleon number?`,choices(String(z+n),[String(n),String(z),String(z*n)]),0,"Nucleon number = protons + neutrons.","Atomic structure"))}
+  else if(k===2){let a=10+i%10;out.push(q(`Which particle is gained or lost when an atom forms an ion?`,choices("Electron",["Proton","Neutron","Nucleus"]),0,"Electrons are transferred during ion formation.","Atomic structure"))}
+  else if(k===3){out.push(q("Which type of bonding involves electrostatic attraction between oppositely charged ions?",choices("Ionic bonding",["Covalent bonding","Metallic bonding","Hydrogen bonding"]),0,"Ionic bonding involves oppositely charged ions.","Bonding"))}
+  else if(k===4){let m=20+i%20;out.push(q(`A sample contains ${m} g of a substance with Mr = 20. How many moles are present?`,choices(fmt(m/20)+" mol",[fmt(m*20)+" mol",fmt(20/m)+" mol",fmt(m+20)+" mol"]),0,"Moles = mass ÷ relative formula mass.","Stoichiometry"))}
+  else if(k===5){out.push(q("What colour does universal indicator usually show for a strongly acidic solution?",choices("Red",["Green","Blue","Purple"]),0,"Strong acids give a red result with universal indicator.","Acids bases and salts"))}
+  else if(k===6){out.push(q("Which gas relights a glowing splint?",choices("Oxygen",["Hydrogen","Carbon dioxide","Chlorine"]),0,"Oxygen supports combustion and relights a glowing splint.","Periodic table"))}
+  else if(k===7){out.push(q("Which change generally increases the rate of a reaction?",choices("Increasing temperature",["Decreasing particle collisions","Lowering concentration","Using larger solid pieces"]),0,"Higher temperature usually increases collision frequency and energy.","Rates and energy"))}
+  else if(k===8){out.push(q("Which hydrocarbon is saturated?",choices("Ethane",["Ethene","Ethyne","Propene"]),0,"Alkanes contain only single carbon-carbon bonds.","Organic chemistry"))}
+  else {out.push(q("What is the main reason graphite conducts electricity?",choices("It has delocalised electrons",["It has no electrons","All its electrons are fixed","It contains only ions"]),0,"Graphite has electrons that can move through its layers.","Bonding"))}
+ }return out;
+}
+function biologyQuestions(){
+ const out=[];for(let i=0;i<200;i++){let k=i%10;
+  if(k===0)out.push(q("Which organelle controls the activities of a cell?",choices("Nucleus",["Ribosome","Cell wall","Vacuole"]),0,"The nucleus contains genetic material and controls cell activities.","Cells"));
+  else if(k===1)out.push(q("Which structure is present in plant cells but not typical animal cells?",choices("Cell wall",["Cell membrane","Cytoplasm","Ribosome"]),0,"Plant cells have a cellulose cell wall.","Cells"));
+  else if(k===2){let c=2+i%8;out.push(q(`A cell is placed in a solution with a lower water potential than the cell. What happens to the cell?`,choices("It loses water by osmosis",["It gains water by osmosis","It gains solute by osmosis","Nothing can move"]),0,"Water moves from higher to lower water potential.","Movement in and out of cells"))}
+  else if(k===3)out.push(q("Which test gives a blue-black colour when starch is present?",choices("Iodine test",["Benedict's test","Biuret test","DCPIP test"]),0,"Iodine turns blue-black when starch is present.","Biological molecules"));
+  else if(k===4)out.push(q("What happens to an enzyme when its temperature is far above its optimum?",choices("Its active site changes shape",["It becomes a carbohydrate","It gains unlimited activity","Its substrate disappears"]),0,"High temperatures can denature enzymes by changing the active site.","Enzymes"));
+  else if(k===5)out.push(q("Which tissue transports water and mineral ions upward through a plant?",choices("Xylem",["Phloem","Epidermis","Mesophyll"]),0,"Xylem transports water and mineral ions from roots.","Transport"));
+  else if(k===6)out.push(q("Where does aerobic respiration mainly occur in a eukaryotic cell?",choices("Mitochondria",["Nucleus","Ribosome","Cell wall"]),0,"Most aerobic respiration occurs in mitochondria.","Respiration"));
+  else if(k===7)out.push(q("Which hormone lowers blood glucose concentration?",choices("Insulin",["Adrenaline","Glucagon","Thyroxine"]),0,"Insulin promotes uptake and storage of glucose.","Coordination"));
+  else if(k===8)out.push(q("Which organism is a producer in a food chain?",choices("Green plant",["Lion","Fungus","Earthworm"]),0,"Producers make organic food using an energy source such as light.","Ecology"));
+  else out.push(q("Which factor is required for photosynthesis?",choices("Carbon dioxide",["Urea","Lactic acid","Ammonia"]),0,"Carbon dioxide is a raw material for photosynthesis.","Plant nutrition"));
+ }return out;
+}
+function economicsQuestions(){
+ const out=[];for(let i=0;i<200;i++){let k=i%10;
+  if(k===0)out.push(q("What is the basic economic problem?",choices("Unlimited wants and limited resources",["Unlimited resources and limited wants","No need for choices","Equal incomes for everyone"]),0,"Scarcity means resources are limited while wants are unlimited.","Basic economic problem"));
+  else if(k===1)out.push(q("Which factor of production is rewarded with wages?",choices("Labour",["Land","Capital","Enterprise"]),0,"Labour is human effort and receives wages.","Factors of production"));
+  else if(k===2)out.push(q("What is opportunity cost?",choices("The next best alternative forgone",["The total money spent","Every possible alternative","A firm's profit"]),0,"Opportunity cost is the benefit of the next best alternative not chosen.","Basic economic problem"));
+  else if(k===3){let p=20+i%15,q0=10+i%10;out.push(q(`If the price of a product rises and quantity demanded falls from ${p} to ${q0}, what does this illustrate?`,choices("The law of demand",["The law of supply","A production possibility curve","Comparative advantage"]),0,"Ceteris paribus, quantity demanded usually falls as price rises.","Demand and supply"))}
+  else if(k===4)out.push(q("Which policy is most directly designed to reduce a negative externality from pollution?",choices("A tax on pollution",["A subsidy for pollution","Removing all regulations","A ban on education"]),0,"A tax can make producers account for external costs.","Market failure"));
+  else if(k===5)out.push(q("What is inflation?",choices("A sustained rise in the general price level",["A fall in all prices","A rise in unemployment only","An increase in exports only"]),0,"Inflation is a sustained increase in the general price level.","Macroeconomics"));
+  else if(k===6)out.push(q("Which is a likely effect of higher interest rates on consumer borrowing?",choices("Borrowing becomes more expensive",["Borrowing becomes free","Saving becomes impossible","Taxes automatically fall"]),0,"Higher interest rates increase the cost of borrowing.","Government policy"));
+  else if(k===7)out.push(q("What is a tariff?",choices("A tax on imports",["A subsidy on exports","A limit on domestic wages","A tax on savings"]),0,"A tariff is a tax placed on imported goods.","International trade"));
+  else if(k===8)out.push(q("If demand is price elastic, a small percentage change in price causes:",choices("A larger percentage change in quantity demanded",["No change in quantity demanded","A smaller percentage change only","A guaranteed increase in revenue"]),0,"Elastic demand responds proportionately more than price.","Elasticity"));
+  else out.push(q("Which is an example of capital as a factor of production?",choices("A machine used in a factory",["A worker's effort","A natural forest","An entrepreneur's risk-taking"]),0,"Capital includes man-made resources used to produce goods and services.","Factors of production"));
+ }return out;
+}
+function csQuestions(){
+ const out=[];for(let i=0;i<200;i++){let k=i%10;
+  if(k===0)out.push(q("How many bits are in one byte?",choices("8",["4","16","32"]),0,"One byte contains eight bits.","Data representation"));
+  else if(k===1)out.push(q("Which device converts a physical document into a digital image?",choices("Scanner",["Speaker","Actuator","Projector"]),0,"A scanner captures a document as digital data.","Hardware"));
+  else if(k===2)out.push(q("Which protocol is commonly used to transfer web pages securely?",choices("HTTPS",["HTTP only","FTP only","SMTP"]),0,"HTTPS adds encryption and authentication to HTTP using TLS.","Communication and internet"));
+  else if(k===3)out.push(q("What is phishing?",choices("Tricking users into revealing sensitive information",["Compressing files","Cooling a processor","Sorting an array"]),0,"Phishing uses deceptive messages or sites to obtain information.","Security"));
+  else if(k===4)out.push(q("Which is an example of system software?",choices("Operating system",["Word processor document","Photo","Spreadsheet cell"]),0,"An operating system manages hardware and provides services to applications.","Software"));
+  else if(k===5){let n=2+i%8;out.push(q(`What is the decimal value of binary ${n.toString(2).padStart(4,"0")}?`,choices(String(n),[String(n+1),String(n-1),String(n*2)]),0,"Convert each binary place value and add the values represented by 1s.","Data representation"))}
+  else if(k===6)out.push(q("Which data structure follows FIFO order?",choices("Queue",["Stack","Tree","Graph"]),0,"FIFO means first in first out, which is the queue principle.","Algorithm design"));
+  else if(k===7)out.push(q("Which loop is best when the number of repetitions is known in advance?",choices("FOR loop",["Infinite loop","IF statement","CASE statement"]),0,"A FOR loop is commonly used for a known number of iterations.","Programming"));
+  else if(k===8)out.push(q("What does an actuator do in an automated system?",choices("Causes a physical action",["Stores a password","Displays source code","Measures only temperature"]),0,"An actuator converts a control signal into a physical action.","Automated systems"));
+  else out.push(q("Which search algorithm requires the data to be sorted before searching?",choices("Binary search",["Linear search","Random search","Depth-first image search"]),0,"Binary search repeatedly halves a sorted search space.","Algorithm design"));
+ }return out;
+}
+function englishQuestions(){
+ const out=[];for(let i=0;i<200;i++){let k=i%10;
+  if(k===0)out.push(q("Which word is the most emotive?",choices("Devastated",["Walked","Looked","Entered"]),0,"Devastated has a strong emotional association.","Writer's effect"));
+  else if(k===1)out.push(q("Which statement is a fact?",choices("Water boils at about 100°C at standard atmospheric pressure",["Science is the most interesting subject","This film is amazing","Everyone should exercise daily"]),0,"A fact can be checked against evidence.","Fact and opinion"));
+  else if(k===2)out.push(q("Which technique is used in the phrase 'the wind whispered'?",choices("Personification",["Simile","Statistics","Direct address"]),0,"The wind is given a human action.","Language and tone"));
+  else if(k===3)out.push(q("What is the main purpose of a summary?",choices("To select and condense the key information",["To add unrelated details","To copy every sentence","To introduce a new story"]),0,"A summary focuses on the important information in a shorter form.","Summary"));
+  else if(k===4)out.push(q("Which word creates the strongest sense of urgency?",choices("Immediately",["Eventually","Occasionally","Sometimes"]),0,"Immediately suggests something must happen without delay.","Language and tone"));
+  else if(k===5)out.push(q("A writer describes a building as 'grim and oppressive'. What attitude is suggested?",choices("Negative or uneasy",["Celebratory","Indifferent","Amused"]),0,"Both adjectives have negative associations.","Writer's effect"));
+  else if(k===6)out.push(q("Which is most appropriate in a formal letter to a school principal?",choices("I am writing to request...",["Yo just wanted to say...","Hey what's up?","Gimme an extension"]),0,"Formal writing uses polite and appropriate language.","Extended writing"));
+  else if(k===7)out.push(q("Which phrase is a simile?",choices("The road was like a ribbon",["The road swallowed the cars","The road stretched endlessly","The road screamed"]),0,"A simile compares using 'like' or 'as'.","Writer's effect"));
+  else if(k===8)out.push(q("Which sentence is most concise?",choices("The storm damaged several roofs.",["There was a storm which caused damage to a number of roofs.","Several roofs were, in a way, damaged by the storm.","It was the case that roofs received damage from the storm."]),0,"The first option communicates the idea directly.","Summary"));
+  else out.push(q("Which feature is most useful in an interview?",choices("Questions that encourage detailed responses",["Only yes/no questions","No questions at all","Random unrelated facts"]),0,"Open questions can encourage fuller and more informative answers.","Extended writing"));
+ }return out;
+}
+function spanishQuestions(){
+ const out=[];for(let i=0;i<200;i++){let k=i%10;
+  if(k===0)out.push(q("Choose the correct form: Yo ___ estudiante.",choices("soy",["es","eres","son"]),0,"The first-person singular of ser is soy.","Present tense"));
+  else if(k===1)out.push(q("Choose the correct form: Nosotros ___ en Madrid.",choices("estamos",["estoy","está","están"]),0,"The first-person plural of estar is estamos.","Present tense"));
+  else if(k===2)out.push(q("What does 'ayer' mean?",choices("yesterday",["tomorrow","today","always"]),0,"Ayer means yesterday.","Past tenses"));
+  else if(k===3)out.push(q("Choose the correct preterite form: Ayer yo ___ al colegio.",choices("fui",["voy","iba","iré"]),0,"Fui is the preterite of ir for yo.","Past tenses"));
+  else if(k===4)out.push(q("What does 'me gustaría' mean?",choices("I would like",["I liked yesterday","I must","I am going"]),0,"Me gustaría expresses 'I would like'.","Opinions"));
+  else if(k===5)out.push(q("Choose the correct future form: Mañana nosotros ___ fútbol.",choices("jugaremos",["jugamos","jugábamos","jugaron"]),0,"Jugaremos is the first-person plural future of jugar.","Future"));
+  else if(k===6)out.push(q("What does 'sin embargo' mean?",choices("however",["because","therefore","also"]),0,"Sin embargo means however.","Grammar"));
+  else if(k===7)out.push(q("Choose the best translation: 'I have eaten'.",choices("He comido",["Comí","Como","Comeré"]),0,"He + past participle forms the present perfect.","Past tenses"));
+  else if(k===8)out.push(q("Which phrase gives an opinion?",choices("En mi opinión",["A las ocho","En Madrid","El lunes"]),0,"En mi opinión means 'in my opinion'.","Opinions"));
+  else out.push(q("Choose the correct adjective: La película es ___.",choices("interesante",["interesantes","interesant","interesanta"]),0,"Interesante is singular and works for a feminine singular noun.","Grammar"));
+ }return out;
+}
+function businessQuestions(){
+ const out=[];for(let i=0;i<200;i++){let k=i%10;
+  if(k===0)out.push(q("What is a business's main reason for using market research?",choices("To understand customers and the market",["To guarantee profit","To eliminate all competition","To avoid setting prices"]),0,"Market research helps a business make decisions using information about customers and competitors.","Business activity"));
+  else if(k===1)out.push(q("Which source of finance normally has to be repaid?",choices("A bank loan",["Retained profit","Owner's capital","Share capital"]),0,"A loan is borrowed finance that must normally be repaid with interest.","Finance"));
+  else if(k===2)out.push(q("Which part of the marketing mix concerns how much a customer pays?",choices("Price",["Product","Place","Promotion"]),0,"Price is the amount charged to the customer.","Marketing"));
+  else if(k===3)out.push(q("What is a benefit of division of labour?",choices("Workers can become highly skilled at a specific task",["Every worker performs every task","Training is always unnecessary","Output must always fall"]),0,"Specialisation can improve skill and productivity.","Operations"));
+  else if(k===4)out.push(q("What does cash flow measure?",choices("Money flowing into and out of a business",["Total assets only","Employee satisfaction","Market share only"]),0,"Cash flow records cash inflows and outflows over time.","Finance"));
+  else if(k===5)out.push(q("Which is an example of variable cost?",choices("Raw materials",["Rent of a factory","Annual insurance premium","Permanent building lease"]),0,"Raw material costs usually change with the level of output.","Finance"));
+  else if(k===6)out.push(q("What is a USP?",choices("A unique selling point",["A unit sales price","A universal staffing plan","An unpaid supplier"]),0,"A USP is a feature that differentiates a product from competitors.","Marketing"));
+  else if(k===7)out.push(q("What is an advantage of employing motivated workers?",choices("Higher productivity may result",["Absenteeism must increase","Quality must fall","Training becomes illegal"]),0,"Motivation can improve effort productivity and retention.","People in business"));
+  else if(k===8)out.push(q("Which external factor can directly change a business's borrowing cost?",choices("Interest rates",["Logo design","Employee uniform colour","Packaging shape"]),0,"Changes in interest rates can affect the cost of borrowed finance.","External influences"));
+  else out.push(q("What is a stakeholder?",choices("A person or group with an interest in a business",["Only the business owner","Only a customer","Only a competitor"]),0,"Stakeholders can include owners employees customers suppliers governments and communities.","Business activity"));
+ }return out;
+}
+
+
+const BANKS={
+"Mathematics 0580":mathQuestions,"Physics 0625":physicsQuestions,"Chemistry 0620":chemistryQuestions,
+"Biology 0610":biologyQuestions,"Economics 0455":economicsQuestions,"Computer Science 0478":csQuestions,
+"English Language 0500":englishQuestions,"Spanish 0530":spanishQuestions,"Business Studies 0450":businessQuestions
+};
+const BANK={};
+for(const [s,fn] of Object.entries(BANKS)) BANK[s]=fn();
+
+
+
+function filteredBank(){
+  let arr=BANK[state.subject]||[];
+  if(state.topics.size)arr=arr.filter(x=>state.topics.has(x.topic));
+  return arr.length?arr:(BANK[state.subject]||[]);
+}
+function startQuiz(){
+  let n=Number($("countSelect").value);
+  state.quiz=shuffle(filteredBank()).slice(0,n);
+  state.index=0;state.score=0;state.answered=false;
+  $("home").classList.add("hide");
+  $("progressPage").classList.add("hide");
+  $("quiz").classList.remove("hide");
+  renderQuestion();
+}
+function renderQuestion(){
+  const item=state.quiz[state.index];state.answered=false;
+  $("quizSubject").textContent=state.subject;$("quizTopic").textContent=item.topic;
+  $("questionNum").textContent=`Question ${state.index+1} of ${state.quiz.length}`;
+  $("question").textContent=item.text;
+  $("progress").style.width=(state.index/state.quiz.length*100)+"%";
+  $("scoreText").textContent=`Score: ${state.score}`;
+  $("options").innerHTML=item.options.map((o,i)=>`<button class="option" onclick="answer(${i})"><span class="letter">${String.fromCharCode(65+i)}</span><span>${o}</span></button>`).join("");
+  $("feedback").className="feedback";$("feedback").innerHTML="";
+  $("nextBtn").classList.add("hide");
+}
+function answer(i){
+  if(state.answered)return;
+  state.answered=true;
+  const item=state.quiz[state.index],buttons=[...$("options").children],ok=i===item.answer;
+  if(ok)state.score++;
+  saveProgress(ok);
+  buttons.forEach((b,j)=>{b.classList.add("locked");if(j===item.answer)b.classList.add("correct");if(j===i&&j!==item.answer)b.classList.add("wrong")});
+  $("feedback").className="feedback show";
+  $("feedback").innerHTML=ok?`<strong>Correct ✓</strong><div class="explain">${item.explanation}</div>`:`<strong>Not quite.</strong> The correct answer is <b>${item.options[item.answer]}</b>.<div class="explain">${item.explanation}</div>`;
+  $("scoreText").textContent=`Score: ${state.score}`;
+  $("nextBtn").classList.remove("hide");
+  $("progress").style.width=((state.index+1)/state.quiz.length*100)+"%";
+}
+function nextQuestion(){
+  if(state.index<state.quiz.length-1){state.index++;renderQuestion()}
+  else{
+    $("question").innerHTML=`Quiz complete 🎉`;
+    $("questionNum").textContent=`Final score`;
+    $("options").innerHTML=`<div class="card" style="padding:20px"><div style="font-size:32px;font-weight:800">${state.score}/${state.quiz.length}</div></div>`;
+    $("feedback").className="feedback show";
+    $("feedback").innerHTML="<strong>Keep forging.</strong><div class='explain'>Try another topic or generate another quiz.</div>";
+    $("nextBtn").classList.add("hide");$("progress").style.width="100%";
+  }
+}
+
+$("countSelect").value="5";
+renderSubjects();
+renderTopics();
+showHome();
+</script>
+</body>
+</html>
